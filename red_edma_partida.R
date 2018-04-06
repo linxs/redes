@@ -44,19 +44,23 @@ TTAR<-aperm(TAR,c(3,2,1))
 
 #----------seccion NN --------------------
 
-base<-matrix(0,sn,((ln*ln)-ln)/2,byrow=T)#arma una matriz con las coordenadas
+lx<-11
+izq<-c(1:11)
+der<-c(1:5,12:17)
+basei<-matrix(0,sn,((lx*lx)-lx)/2,byrow=T)#arma una matriz donde quepan las distancias
+based<-basei
 for(i in 1:sn){
-  base[i,]<-c(dist(TTAR[,,i]))
+  basei[i,]<-c(dist(TTAR[izq,,i]))
+  based[i,]<-c(dist(TTAR[der,,i]))
 }
 
-
-
+basedif<-basei-based
 
 EP<-aperm(E,c(2,1,3))
 orig<-matrix(EP,sn,ln*2,byrow=T)#errores por coord
 
 
-mat<-cbind(base,orig)#esta matriz de dimensiones c(10000,136+34) tiene la base completa (train y test), con x (,1:136) e y(,137:170)
+mat<-cbind(basedif,orig)#esta matriz de dimensiones c(10000,55+34) tiene la base completa (train y test), con x (,1:55) e y(,56:89)
 
 #----------------
 
@@ -67,17 +71,22 @@ test = mat[9001:10000,]
 
 
 # Cre Max y Min
-maxs <- apply(train[,1:136], 2, max)
-mins <- apply(train[,1:136], 2, min)
+maxs <- apply(train[,1:55], 2, max)
+mins <- apply(train[,1:55], 2, min)
 
 # escalado y vuelto a la matriz mat
-train[,1:136] <- scale(train[,1:136],center = TRUE, scale = maxs - mins)
-test[,1:136] <- scale(test[,1:136],center = TRUE, scale = maxs - mins)
+train[,1:55] <- scale(train[,1:55],center = TRUE, scale = maxs - mins)
+test[,1:55] <- scale(test[,1:55],center = TRUE, scale = maxs - mins)
 
-x_train <- train[,1:136]
-y_train <- train[,137:170]
-x_test <- test[,1:136]
-y_test <- test[,137:170]
+train[is.na(train)]<-0
+test[is.na(test)]<-0
+
+
+
+x_train <- train[,1:55]
+y_train <- train[,56:89]
+x_test <- test[,1:55]
+y_test <- test[,56:89]
 
 
 #---------KERAS-----------
@@ -88,9 +97,9 @@ library(keras)
 #define el modelo
 model <- keras_model_sequential()
 model %>% 
-  layer_dense(units = 272, activation = 'relu', input_shape = c(136)) %>%
-  layer_dense(units = 272, activation = 'relu') %>%
-  layer_dense(units = 272, activation = 'relu') %>%
+  layer_dense(units = 110, activation = 'relu', input_shape = c(55)) %>%
+  layer_dense(units = 110, activation = 'relu') %>%
+  layer_dense(units = 110, activation = 'relu') %>%
   layer_dense(units = 34, activation = 'linear')
 
 
@@ -112,9 +121,12 @@ history <- model %>% fit( x_train, y_train,
 
 
 pp<-predict(model,x_test)
+rbind(pp[1,],y_test[1,])
 
-for(i in 1:30){
-  plot(t(O[,,i])+matrix(pp[i,],ncol = 2),col="red")
-  points(t(B[,,9000+i]))
-  readline(prompt="Press [enter] to continue")
-}
+
+
+#for(i in 1:30){
+#  plot(t(O[,,i])+matrix(pp[i,],ncol = 2),col="red")
+#  points(t(B[,,9000+i]))
+#  readline(prompt="Press [enter] to continue")
+#}
